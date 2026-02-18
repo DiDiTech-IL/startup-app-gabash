@@ -1,0 +1,150 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id @default(uuid())
+  name           String
+  school         String
+  grade          String
+  avatarColor    String   @default("bg-blue-100")
+  points         Int      @default(0)
+  volunteerHours Int      @default(0)
+  strongSubjects String[]
+  weakSubjects   String[]
+  interests      String[]
+  createdAt      DateTime @default(now())
+
+  posts             Post[]
+  postLikes         PostLike[]
+  comments          Comment[]
+  threadParticipants ThreadParticipant[]
+  sentMessages      Message[]
+  mentorSessions    Session[]  @relation("mentor")
+  studentSessions   Session[]  @relation("student")
+  redemptions       Redemption[]
+  safetyReports     SafetyReport[] @relation("reporter")
+  safetyTargets     SafetyReport[] @relation("target")
+}
+
+model Post {
+  id        String   @id @default(uuid())
+  authorId  String
+  text      String
+  createdAt DateTime @default(now())
+
+  author   User       @relation(fields: [authorId], references: [id])
+  likes    PostLike[]
+  comments Comment[]
+}
+
+model PostLike {
+  id     String @id @default(uuid())
+  postId String
+  userId String
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  postId    String
+  authorId  String
+  text      String
+  createdAt DateTime @default(now())
+
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model Thread {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  participants ThreadParticipant[]
+  messages     Message[]
+}
+
+model ThreadParticipant {
+  id       String @id @default(uuid())
+  threadId String
+  userId   String
+
+  thread Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([threadId, userId])
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  threadId  String
+  senderId  String
+  text      String
+  createdAt DateTime @default(now())
+
+  thread Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  sender User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id              String        @id @default(uuid())
+  mentorId        String
+  studentId       String
+  subject         String
+  startTime       DateTime
+  durationMinutes Int
+  location        String
+  status          SessionStatus @default(SCHEDULED)
+  createdAt       DateTime      @default(now())
+
+  mentor  User @relation("mentor", fields: [mentorId], references: [id])
+  student User @relation("student", fields: [studentId], references: [id])
+}
+
+enum SessionStatus {
+  SCHEDULED
+  COMPLETED
+}
+
+model Reward {
+  id          String @id @default(uuid())
+  name        String
+  cost        Int
+  icon        String
+  color       String
+  redemptions Redemption[]
+}
+
+model Redemption {
+  id        String   @id @default(uuid())
+  rewardId  String
+  userId    String
+  code      String   @default("")
+  createdAt DateTime @default(now())
+
+  reward Reward @relation(fields: [rewardId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model SafetyReport {
+  id           String   @id @default(uuid())
+  reporterId   String
+  targetUserId String?
+  type         String
+  createdAt    DateTime @default(now())
+
+  reporter User  @relation("reporter", fields: [reporterId], references: [id])
+  target   User? @relation("target", fields: [targetUserId], references: [id])
+}
