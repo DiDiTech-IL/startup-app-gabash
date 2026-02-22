@@ -1,34 +1,57 @@
 const BASE_URL =
   import.meta.env.VITE_API_URL ?? "";
+const REQUEST_TIMEOUT_MS = 12_000;
+
+if (import.meta.env.PROD && !BASE_URL) {
+  throw new Error("VITE_API_URL must be set in production");
+}
 
 function getToken() {
   return localStorage.getItem("helpin_token");
 }
 
+const API_KEY = import.meta.env.VITE_API_KEY ?? "";
+
 async function request(path, options = {}) {
   const token = getToken();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   const headers = {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(API_KEY ? { "x-api-key": API_KEY } : {}),
     ...options.headers,
   };
 
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  try {
+    const res = await fetch(`${BASE_URL}${path}`, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error || `HTTP ${res.status}`);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText }));
+      const err = new Error(body.error || `HTTP ${res.status}`);
+      err.status = res.status;
+      throw err;
+    }
+
+    return res.json();
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error("Request timed out. Please try again.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
   }
-
-  return res.json();
 }
 
 // AUTH
 export const authApi = {
-  loginAnonymous: () => request("/api/auth/anonymous", { method: "POST" }),
+  signup: (data) => request("/api/auth/signup", { method: "POST", body: JSON.stringify(data) }),
+  signin: (data) => request("/api/auth/signin", { method: "POST", body: JSON.stringify(data) }),
 };
 
 // USERS

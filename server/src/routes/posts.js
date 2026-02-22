@@ -1,10 +1,9 @@
 const express = require("express");
 const { z } = require("zod");
-const { PrismaClient } = require("@prisma/client");
+const { prisma } = require("../lib/prisma");
 const { authenticate } = require("../middleware/auth");
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // GET /api/posts
 router.get("/posts", authenticate, async (req, res, next) => {

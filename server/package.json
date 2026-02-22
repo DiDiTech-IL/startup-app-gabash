@@ -1,23 +1,31 @@
 {
   "name": "helpin-server",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "HelpIN Backend API",
   "main": "src/index.js",
   "scripts": {
+    "build": "prisma generate && prisma migrate deploy",
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "seed": "node prisma/seed.js"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.30",
     "@prisma/client": "^5.10.0",
+    "ai": "^6.0.97",
     "bcrypt": "^5.1.1",
+    "compression": "^1.8.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.1",
     "express": "^4.18.2",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {

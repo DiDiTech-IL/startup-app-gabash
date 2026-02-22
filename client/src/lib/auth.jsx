@@ -6,36 +6,60 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [joining, setJoining] = useState(false);
 
   useEffect(() => {
     bootstrap();
   }, []);
 
   async function bootstrap() {
+    const token = localStorage.getItem("helpin_token");
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     try {
-      let token = localStorage.getItem("helpin_token");
-      if (!token) {
-        const res = await authApi.loginAnonymous();
-        token = res.token;
-        localStorage.setItem("helpin_token", token);
-        setUser(res.user);
-      } else {
-        const me = await usersApi.me();
-        setUser(me);
-      }
+      const me = await usersApi.me();
+      setUser(me);
     } catch (err) {
-      // Token invalid – get fresh one
-      localStorage.removeItem("helpin_token");
-      try {
-        const res = await authApi.loginAnonymous();
-        localStorage.setItem("helpin_token", res.token);
-        setUser(res.user);
-      } catch {
-        console.error("Auth bootstrap failed");
+      if (err.status === 401) {
+        localStorage.removeItem("helpin_token");
       }
+      setUser(null);
     } finally {
       setLoading(false);
     }
+  }
+
+  async function signup(profile) {
+    if (joining) return;
+    setJoining(true);
+    try {
+      const res = await authApi.signup(profile);
+      localStorage.setItem("helpin_token", res.token);
+      setUser(res.user);
+      return res.user;
+    } finally {
+      setJoining(false);
+    }
+  }
+
+  async function signin(credentials) {
+    if (joining) return;
+    setJoining(true);
+    try {
+      const res = await authApi.signin(credentials);
+      localStorage.setItem("helpin_token", res.token);
+      setUser(res.user);
+      return res.user;
+    } finally {
+      setJoining(false);
+    }
+  }
+
+  function signout() {
+    localStorage.removeItem("helpin_token");
+    setUser(null);
   }
 
   function updateUser(updatedUser) {
@@ -43,7 +67,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, joining, signup, signin, signout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -20,11 +20,11 @@ import { MessagesScreen } from "../features/messages/MessagesScreen.jsx";
 import { Calendar, Gift, Users } from "lucide-react";
 
 function AppInner() {
-  const { loading } = useAuth();
+  const { loading, joining, user, signup, signin, signout } = useAuth();
 
   const [screen, setScreen] = useState("home_screen");
   const [animate, setAnimate] = useState(false);
-  const [selectedStrong, setSelectedStrong] = useState(["אנגלית"]);
+  const [selectedStrong, setSelectedStrong] = useState([]);
   const [selectedWeak, setSelectedWeak] = useState([]);
   const [selectedInterests, setSelectedInterests] = useState([]);
   const [chatPartner, setChatPartner] = useState(null);
@@ -34,6 +34,17 @@ function AppInner() {
   const [showProfile, setShowProfile] = useState(false);
   const [isSafetyOpen, setIsSafetyOpen] = useState(false);
   const [notificationData, setNotificationData] = useState(null);
+
+  const handleSignout = () => {
+    signout();
+    setScreen("home_screen");
+    setShowProfile(false);
+    setSelectedStrong([]);
+    setSelectedWeak([]);
+    setSelectedInterests([]);
+    setShowNotification(false);
+    setAnimate(false);
+  };
 
   if (loading) {
     return (
@@ -58,6 +69,22 @@ function AppInner() {
       setScreen(nextScreen);
       setAnimate(false);
     }, 300);
+  };
+
+  const handleStart = async (profile) => {
+    if (!user) {
+      try {
+        if (profile.mode === "signin") {
+          await signin({ name: profile.name, school: profile.school, pin: profile.pin });
+        } else {
+          await signup(profile);
+        }
+      } catch (error) {
+        console.error("Auth failed", error);
+        return;
+      }
+    }
+    handleTransition("dashboard");
   };
 
   const toggleSelection = (item, type) => {
@@ -148,7 +175,7 @@ function AppInner() {
             animate ? "opacity-0" : "opacity-100"
           } relative`}
         >
-          {showProfile && <ProfileScreen onClose={() => setShowProfile(false)} />}
+          {showProfile && <ProfileScreen onClose={() => setShowProfile(false)} onSignout={handleSignout} />}
 
           {screen === "home_screen" && (
             <PhoneHomeScreen
@@ -157,7 +184,7 @@ function AppInner() {
             />
           )}
           {screen === "landing" && (
-            <LandingScreen onStart={(next) => handleTransition(next)} />
+            <LandingScreen onStart={handleStart} isStarting={joining} />
           )}
           {screen === "dashboard" && (
             <DashboardScreen

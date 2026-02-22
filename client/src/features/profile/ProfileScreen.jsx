@@ -2,10 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../lib/auth.jsx";
 import { usersApi } from "../../lib/api";
 import { IconButton } from "../../components/Buttons.jsx";
-import { X, Award, Shield, Zap, Heart, Star, Trophy } from "lucide-react";
+import { X, Award, Shield, Zap, Heart, Star, Trophy, LogOut } from "lucide-react";
 import { useState } from "react";
 
-export function ProfileScreen({ onClose }) {
+export function ProfileScreen({ onClose, onSignout }) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
 
@@ -33,7 +33,7 @@ export function ProfileScreen({ onClose }) {
           <div className="w-20 h-20 bg-gradient-to-br from-blue-200 to-green-200 rounded-full flex items-center justify-center text-3xl mb-3 border-4 border-white shadow-lg">
             🧑‍🎓
           </div>
-          <h2 className="text-xl font-bold text-slate-800">{user?.name || "דניאל כהן"}</h2>
+          <h2 className="text-xl font-bold text-slate-800">{user?.name || ""}</h2>
           <p className="text-sm text-slate-500">{user?.school} • {user?.grade}</p>
 
           <div className="flex gap-2 mt-6 bg-slate-100 p-1 rounded-xl w-full max-w-[240px]">
@@ -98,6 +98,14 @@ export function ProfileScreen({ onClose }) {
                 </div>
               </div>
             </div>
+
+            <button
+              onClick={onSignout}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-red-100 text-red-500 text-sm font-bold hover:bg-red-50 active:scale-95 transition-all"
+            >
+              <LogOut size={16} />
+              יציאה מהחשבון
+            </button>
           </div>
         ) : (
           <div className="p-4 space-y-3">

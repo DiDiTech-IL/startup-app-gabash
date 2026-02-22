@@ -6,7 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
 }
 
 model User {
@@ -15,6 +16,7 @@ model User {
   school         String
   grade          String
   avatarColor    String   @default("bg-blue-100")
+  pinHash        String?
   points         Int      @default(0)
   volunteerHours Int      @default(0)
   strongSubjects String[]
