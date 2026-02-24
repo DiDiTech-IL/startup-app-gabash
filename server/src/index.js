@@ -19,37 +19,9 @@ const sessionRoutes = require("./routes/sessions");
 const rewardRoutes = require("./routes/rewards");
 const safetyRoutes = require("./routes/safety");
 const aiRoutes = require("./routes/ai");
-const libraryRoutes = require("./routes/library");
 
 const app = express();
 const PORT = env.PORT;
-
-function toPublicError(err) {
-  if (typeof err?.message === "string" && err.message.trim()) {
-    if (err.message === "Not allowed by CORS") {
-      return { status: 403, message: "Request origin is not allowed" };
-    }
-
-    if (err.name === "ZodError") {
-      const first = err.errors?.[0]?.message;
-      return { status: 400, message: first || "Invalid request data" };
-    }
-
-    if (err.code === "P2002") return { status: 409, message: "Duplicate data already exists" };
-    if (err.code === "P2003") return { status: 400, message: "Invalid related entity" };
-    if (err.code === "P2025") return { status: 404, message: "Requested record was not found" };
-
-    if (err.status && err.status < 500) {
-      return { status: err.status, message: err.message };
-    }
-
-    if (/invalid|missing|required|forbidden|unauthorized|not found/i.test(err.message)) {
-      return { status: err.status || 400, message: err.message };
-    }
-  }
-
-  return { status: err.status || 500, message: "Something went wrong. Please try again." };
-}
 
 app.set("trust proxy", 1);
 
@@ -106,14 +78,12 @@ app.use("/api", sessionRoutes);
 app.use("/api", rewardRoutes);
 app.use("/api", safetyRoutes);
 app.use("/api/ai", aiRoutes);
-app.use("/api", libraryRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
   console.error(err);
-  const publicErr = toPublicError(err);
   res.status(err.status || 500).json({
-    error: env.NODE_ENV === "production" ? publicErr.message : err.message || publicErr.message,
+    error: env.NODE_ENV === "production" ? "Internal server error" : err.message || "Internal server error",
   });
 });
 

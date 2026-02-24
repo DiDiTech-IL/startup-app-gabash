@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.30",
-    "@ai-sdk/vercel": "^2.0.32",
     "@prisma/client": "^5.10.0",
     "ai": "^6.0.97",
     "bcrypt": "^5.1.1",

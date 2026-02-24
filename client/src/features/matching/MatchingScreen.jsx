@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { matchesApi } from "../../lib/api";
-import { useAuth } from "../../lib/auth.jsx";
 import { IconButton, SafetyHeaderButton, ProfileHeaderButton } from "../../components/Buttons.jsx";
 import { ArrowLeft, Star, MessageCircle, Filter } from "lucide-react";
 
@@ -14,46 +13,14 @@ export function MatchingScreen({
   onOpenProfile,
   onReport,
 }) {
-  const { user } = useAuth();
-  const effectiveStrong = user?.strongSubjects ?? selectedStrong;
-  const effectiveWeak = user?.weakSubjects ?? selectedWeak;
-  const effectiveInterests = user?.interests ?? selectedInterests;
-  const norm = (value) => (value ?? "").trim().toLowerCase();
-
-  // Include the saved subject arrays in the key so that every time the user
-  // updates their preferences (via onboarding) a brand-new fetch is triggered
-  // instead of reusing a cached result with the old subjects.
-  const prefKey = JSON.stringify([
-    effectiveStrong,
-    effectiveWeak,
-    effectiveInterests,
-  ]);
-
-  const { data: rawMatches = [], isLoading } = useQuery({
-    queryKey: ["matches", user?.id, prefKey],
+  const { data: matches = [], isLoading } = useQuery({
+    queryKey: ["matches"],
     queryFn: matchesApi.list,
-    enabled: !!user?.id,          // never run before we know who we are
-    staleTime: 0,                 // always re-fetch when preferences change
-    refetchInterval: 30_000,      // auto-refresh every 30 s to surface new users
-    refetchIntervalInBackground: false,
-  });
-
-  // Triple-guard: strip self client-side regardless of what the server returns
-  const matches = rawMatches.filter((m) => {
-    if (!m?.user) return false;
-
-    const sameId = m.user.id === user?.id;
-    const sameProfile =
-      norm(m.user.name) === norm(user?.name) &&
-      norm(m.user.school) === norm(user?.school) &&
-      norm(m.user.grade) === norm(user?.grade);
-
-    return !sameId && !sameProfile;
   });
 
   const getHeaderText = () => {
-    if (effectiveWeak.length > 0) return `מורים ל${effectiveWeak[0]}`;
-    if (effectiveStrong.length > 0) return `תלמידים ל${effectiveStrong[0]}`;
+    if (selectedWeak.length > 0) return `מורים ל${selectedWeak[0]}`;
+    if (selectedStrong.length > 0) return `תלמידים ל${selectedStrong[0]}`;
     return "חיפוש כללי";
   };
 
@@ -62,12 +29,10 @@ export function MatchingScreen({
       <div className="bg-white px-4 pb-4 pt-14 shadow-sm sticky top-0 z-20 flex items-center gap-3 border-b border-slate-100">
         <IconButton onClick={() => onBack("onboarding")} icon={ArrowLeft} className="transform rotate-180" />
         <div className="flex-1">
-          <h2 className="text-lg font-bold text-slate-800 leading-tight">
-            {matches.length > 0 ? "נמצאו התאמות" : "לא נמצאו התאמות"}
-          </h2>
+          <h2 className="text-lg font-bold text-slate-800 leading-tight">נמצאו התאמות</h2>
           <p className="text-xs text-slate-500">
             {getHeaderText()}
-            {effectiveInterests.length > 0 ? ` • ${effectiveInterests.length} תחומי עניין` : " • מבוסס פרופיל"}
+            {selectedInterests.length > 0 ? ` • ${selectedInterests.length} תחומי עניין` : " • מבוסס פרופיל"}
           </p>
         </div>
         <div className="flex gap-2">
@@ -80,11 +45,6 @@ export function MatchingScreen({
       <div className="flex-1 p-4 space-y-4 overflow-y-auto pb-4">
         {isLoading ? (
           <div className="text-center text-slate-400 py-10 animate-pulse">מחפש התאמות...</div>
-        ) : matches.length === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 text-center text-slate-600">
-            <p className="font-bold text-slate-700 mb-1">כרגע אין התאמות זמינות</p>
-            <p className="text-xs text-slate-500">נסה/י לעדכן מקצועות או לחזור בעוד כמה דקות.</p>
-          </div>
         ) : (
           matches.map((match, index) => (
             <div

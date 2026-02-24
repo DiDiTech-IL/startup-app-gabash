@@ -39,21 +39,3 @@ body {
   60% { transform: translateY(5px) scale(1.02); opacity: 1; }
   100% { transform: translateY(0) scale(1); opacity: 1; }
 }
-
-/* ── KaTeX: force LTR inside RTL Hebrew layout ────────────────────── */
-.katex,
-.katex-display {
-  direction: ltr;
-  unicode-bidi: embed;
-  text-align: left;
-}
-.katex-display {
-  display: block;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 0.4rem 0;
-  margin: 0.5rem 0;
-}
-/* Restore sizes Tailwind preflight strips from KaTeX internals */
-.katex .reset-textstyle.scriptstyle { font-size: 0.7em; }
-.katex .reset-textstyle.scriptscriptstyle { font-size: 0.5em; }

@@ -97,19 +97,4 @@ router.post("/posts/:id/comments", authenticate, async (req, res, next) => {
   }
 });
 
-// DELETE /api/posts/:id
-router.delete("/posts/:id", authenticate, async (req, res, next) => {
-  try {
-    const post = await prisma.post.findUnique({ where: { id: req.params.id } });
-    if (!post) return res.status(404).json({ error: "Post not found" });
-    if (post.authorId !== req.user.id)
-      return res.status(403).json({ error: "Forbidden – you can only delete your own posts" });
-
-    await prisma.post.delete({ where: { id: req.params.id } });
-    res.json({ deleted: true });
-  } catch (err) {
-    next(err);
-  }
-});
-
 module.exports = router;

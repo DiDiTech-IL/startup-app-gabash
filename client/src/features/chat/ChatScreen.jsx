@@ -13,6 +13,7 @@ export function ChatScreen({ partner, onBack, subject, isTeaching, onReport }) {
   const messagesEndRef = useRef(null);
 
   const partnerName = partner?.name || "רועי";
+  const isFemale = false; // backend would have gender field if needed
 
   // Create / get thread
   const createThread = useMutation({
@@ -46,25 +47,10 @@ export function ChatScreen({ partner, onBack, subject, isTeaching, onReport }) {
     setInput("");
   };
 
-  const quickStarters = isTeaching
-    ? [
-        `היי ${partnerName}, אני יכול/ה לעזור ב${subject}. מתי נוח לך?`,
-        `רוצה שנתאם תרגול קצר ב${subject} היום?`,
-        `בכיף אעזור לך ב${subject}. מתאים ב-${new Date().toLocaleTimeString("he-IL", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}?`,
-      ]
-    : [
-        `היי ${partnerName}, ראיתי שאת/ה יכול/ה לעזור ב${subject}. אפשר לקבוע?`,
-        `אשמח לעזרה ב${subject}. מתי נוח לך?`,
-        `אפשר שיעור קצר ב${subject} השבוע?`,
-      ];
-
-  const sendStarter = (text) => {
-    if (!threadId || sendMutation.isPending) return;
-    sendMutation.mutate(text);
-  };
+  // Show seed messages when there are none yet
+  const helpText = isTeaching
+    ? `היי ${user?.name?.split(" ")[0] || ""}! ראיתי שאתה מציע עזרה ב${subject}.`
+    : `היי ${user?.name?.split(" ")[0] || ""}! ראיתי שאתה מחפש עזרה ב${subject}.`;
 
   const displayMessages = messages.length > 0 ? messages : null;
 
@@ -99,41 +85,19 @@ export function ChatScreen({ partner, onBack, subject, isTeaching, onReport }) {
           <span className="bg-slate-200 text-slate-500 text-[10px] px-2 py-1 rounded-full">היום</span>
         </div>
 
-        {createThread.isPending && (
-          <div className="flex justify-center">
-            <span className="bg-white border border-slate-200 text-slate-500 text-xs px-3 py-1.5 rounded-full">
-              פותח צ׳אט...
-            </span>
-          </div>
-        )}
-
-        {createThread.isError && (
-          <div className="flex justify-center">
-            <span className="bg-red-50 border border-red-200 text-red-600 text-xs px-3 py-1.5 rounded-full">
-              {createThread.error?.message || "לא הצלחנו לפתוח צ׳אט, נסה/י שוב"}
-            </span>
-          </div>
-        )}
-
         {!displayMessages ? (
           <>
-            <div className="flex justify-center px-2">
-              <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center max-w-[95%] shadow-sm">
-                <p className="text-sm font-semibold text-slate-700 mb-1">עדיין אין הודעות בצ׳אט הזה</p>
-                <p className="text-xs text-slate-500">בחר/י אפשרות לפתיחת שיחה או כתוב/כתבי הודעה משלך.</p>
+            <div className="flex justify-start">
+              <div className="bg-white p-3 rounded-2xl rounded-tr-none shadow-sm max-w-[80%] text-sm text-slate-800 animate-[fadeIn_0.5s_ease-out]">
+                {helpText}
+                <span className="text-[9px] text-slate-400 block text-left mt-1">15:30</span>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2 justify-center">
-              {quickStarters.map((starter) => (
-                <button
-                  key={starter}
-                  onClick={() => sendStarter(starter)}
-                  disabled={!threadId || sendMutation.isPending}
-                  className="bg-white text-slate-700 border border-slate-200 rounded-full px-3 py-2 text-xs shadow-sm hover:border-green-300 hover:text-green-700 disabled:opacity-50"
-                >
-                  {starter}
-                </button>
-              ))}
+            <div className="flex justify-start">
+              <div className="bg-white p-3 rounded-2xl rounded-tr-none shadow-sm max-w-[80%] text-sm text-slate-800 animate-[fadeIn_0.5s_ease-out_0.2s_both]">
+                אני פנוי היום ב-16:00, מתאים לך?
+                <span className="text-[9px] text-slate-400 block text-left mt-1">15:31</span>
+              </div>
             </div>
           </>
         ) : (

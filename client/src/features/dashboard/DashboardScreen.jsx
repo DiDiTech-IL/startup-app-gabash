@@ -1,60 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../lib/auth.jsx";
 import { SafetyHeaderButton } from "../../components/Buttons.jsx";
-import { sessionsApi } from "../../lib/api";
 import {
   Clock, Star, Users, ArrowLeft, MessageSquare, BookOpen, ShoppingBag,
-  Bot, Sparkles, ChevronRight, CalendarCheck
+  Bot, Sparkles, ChevronRight
 } from "lucide-react";
-
-function formatSessionDate(iso) {
-  return new Date(iso).toLocaleString("he-IL", {
-    weekday: "short",
-    day: "numeric",
-    month: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export function DashboardScreen({ onNavigate, onOpenProfile, onReport }) {
   const { user } = useAuth();
-
-  const { data: upcomingSessions = [] } = useQuery({
-    queryKey: ["sessions", "upcoming"],
-    queryFn: sessionsApi.upcoming,
-    enabled: !!user,
-    staleTime: 30_000,
-  });
-
-  const { data: allSessions = [] } = useQuery({
-    queryKey: ["sessions", "all"],
-    queryFn: sessionsApi.list,
-    enabled: !!user,
-    staleTime: 30_000,
-  });
-
-  const sessionsSummary = allSessions.reduce(
-    (acc, session) => {
-      if (session.role === "REQUESTED") acc.requested += 1;
-      if (session.role === "INVITED") acc.invited += 1;
-
-      if (session.derivedStatus === "SCHEDULED") acc.scheduled += 1;
-      if (session.derivedStatus === "PASSED") acc.passed += 1;
-      if (session.derivedStatus === "COMPLETED") acc.completed += 1;
-      if (session.derivedStatus === "CANCELED") acc.canceled += 1;
-
-      return acc;
-    },
-    {
-      requested: 0,
-      invited: 0,
-      scheduled: 0,
-      passed: 0,
-      completed: 0,
-      canceled: 0,
-    }
-  );
   const greeting = user ? `בוקר טוב, ${user.name.split(" ")[0]} ☀️` : "בוקר טוב ☀️";
 
   return (
@@ -138,60 +90,6 @@ export function DashboardScreen({ onNavigate, onOpenProfile, onReport }) {
             </div>
           </div>
         </div>
-
-        {upcomingSessions.length > 0 && (
-          <div className="space-y-2">
-            <h2 className="text-slate-800 font-bold text-lg mb-1 flex items-center gap-2">
-              <CalendarCheck size={20} className="text-blue-600" />
-              שיעורים קרובים
-            </h2>
-            {upcomingSessions.map((session) => {
-              const partner =
-                session.mentorId === user?.id ? session.student : session.mentor;
-              return (
-                <div
-                  key={session.id}
-                  className="bg-white p-4 rounded-2xl shadow-sm border border-blue-100 flex items-center gap-3"
-                >
-                  <div
-                    className={`w-10 h-10 ${
-                      partner?.avatarColor || "bg-slate-200"
-                    } rounded-full flex items-center justify-center font-bold text-slate-700 text-sm`}
-                  >
-                    {partner?.name?.charAt(0) ?? "?"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-slate-800">{session.subject}</p>
-                    <p className="text-[11px] text-slate-500 truncate">
-                      עם {partner?.name} • {formatSessionDate(session.startTime)}
-                    </p>
-                  </div>
-                  <div className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
-                    {session.location}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {allSessions.length > 0 && (
-          <div
-            onClick={() => onNavigate("calendar")}
-            className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm cursor-pointer active:scale-95 transition-all"
-          >
-            <h2 className="text-slate-800 font-bold text-sm mb-3">סטטוס מפגשים</h2>
-            <div className="flex flex-wrap gap-2 mb-3">
-              <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">מתוכנן: {sessionsSummary.scheduled}</span>
-              <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-100">עבר: {sessionsSummary.passed}</span>
-              <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-green-50 text-green-700 border border-green-100">הושלם: {sessionsSummary.completed}</span>
-              <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-red-50 text-red-700 border border-red-100">בוטל: {sessionsSummary.canceled}</span>
-            </div>
-            <p className="text-xs text-slate-500">
-              ביקשתי: {sessionsSummary.requested} • הוזמנתי: {sessionsSummary.invited}
-            </p>
-          </div>
-        )}
 
         <div className="grid grid-cols-2 gap-4">
           <div

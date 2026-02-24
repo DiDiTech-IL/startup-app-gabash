@@ -1,10 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { postsApi } from "../../lib/api";
-import { useAuth } from "../../lib/auth.jsx";
 import { IconButton, SafetyHeaderButton, ProfileHeaderButton } from "../../components/Buttons.jsx";
 import {
-  ArrowLeft, ThumbsUp, MessageSquare, Share2, Plus, Send, Trash2
+  ArrowLeft, ThumbsUp, MessageSquare, Share2, Plus, Calculator, Send
 } from "lucide-react";
 
 function timeAgo(dateStr) {
@@ -17,7 +16,7 @@ function timeAgo(dateStr) {
   return `לפני ${Math.floor(hours / 24)} ימים`;
 }
 
-function PostCard({ post, currentUserId, onLike, onComment, onDelete }) {
+function PostCard({ post, onLike, onComment }) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
 
@@ -38,15 +37,6 @@ function PostCard({ post, currentUserId, onLike, onComment, onDelete }) {
           <h4 className="text-sm font-bold text-slate-900">{post.author.name}</h4>
           <p className="text-[10px] text-slate-400">{timeAgo(post.createdAt)}</p>
         </div>
-        {post.author.id === currentUserId && (
-          <button
-            onClick={() => onDelete(post.id)}
-            className="p-1.5 text-slate-300 hover:text-red-400 transition-colors active:scale-90 rounded-full hover:bg-red-50 mr-1"
-            title="מחק פוסט"
-          >
-            <Trash2 size={14} />
-          </button>
-        )}
       </div>
       <p className="text-sm text-slate-700 leading-relaxed mb-3 whitespace-pre-wrap">{post.text}</p>
       <div className="flex items-center gap-4 pt-2 border-t border-slate-50">
@@ -126,7 +116,6 @@ function NewPostModal({ onClose, onSubmit }) {
 export function FeedScreen({ onBack, onOpenProfile, onReport }) {
   const [showNewPost, setShowNewPost] = useState(false);
   const queryClient = useQueryClient();
-  const { user } = useAuth();
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["posts"],
@@ -165,18 +154,6 @@ export function FeedScreen({ onBack, onOpenProfile, onReport }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["posts"] }),
   });
 
-  const deletePostMutation = useMutation({
-    mutationFn: (postId) => postsApi.delete(postId),
-    onMutate: async (postId) => {
-      await queryClient.cancelQueries({ queryKey: ["posts"] });
-      const prev = queryClient.getQueryData(["posts"]);
-      queryClient.setQueryData(["posts"], (old) => old?.filter((p) => p.id !== postId));
-      return { prev };
-    },
-    onError: (_, __, ctx) => queryClient.setQueryData(["posts"], ctx.prev),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["posts"] }),
-  });
-
   return (
     <div className="flex flex-col h-full bg-slate-50 animate-[fadeIn_0.3s_ease-out]">
       {showNewPost && (
@@ -206,10 +183,8 @@ export function FeedScreen({ onBack, onOpenProfile, onReport }) {
             <PostCard
               key={post.id}
               post={post}
-              currentUserId={user?.id}
               onLike={(id) => likeMutation.mutate(id)}
               onComment={(postId, text) => commentMutation.mutate({ postId, text })}
-              onDelete={(id) => deletePostMutation.mutate(id)}
             />
           ))
         )}

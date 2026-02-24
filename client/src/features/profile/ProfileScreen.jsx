@@ -9,15 +9,6 @@ export function ProfileScreen({ onClose, onSignout }) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
 
-  const { data: freshUser } = useQuery({
-    queryKey: ["user", "me"],
-    queryFn: usersApi.me,
-    enabled: activeTab === "profile",
-    staleTime: 10_000,
-  });
-
-  const profileUser = freshUser || user;
-
   const { data: leaderboard = [] } = useQuery({
     queryKey: ["leaderboard"],
     queryFn: usersApi.leaderboard,
@@ -25,56 +16,13 @@ export function ProfileScreen({ onClose, onSignout }) {
   });
 
   const maxHours = 60;
-  const progress = profileUser ? Math.min(100, (profileUser.volunteerHours / maxHours) * 100) : 0;
-
-  const topSubject = profileUser?.strongSubjects?.[0] || null;
-  const volunteerHours = profileUser?.volunteerHours ?? 0;
-  const points = profileUser?.points ?? 0;
+  const progress = user ? Math.min(100, (user.volunteerHours / maxHours) * 100) : 0;
 
   const badges = [
-    {
-      id: 1,
-      icon: <Shield size={20} />,
-      label: "חונך/ת מאומת/ת",
-      color: "bg-blue-100 text-blue-600",
-      unlocked: volunteerHours >= 1,
-      criteria: volunteerHours >= 1 ? "נפתח" : "שעה ראשונה לפתיחה",
-    },
-    {
-      id: 2,
-      icon: <Heart size={20} />,
-      label: "לב זהב",
-      color: "bg-red-100 text-red-600",
-      unlocked: volunteerHours >= 10,
-      criteria: volunteerHours >= 10 ? "נפתח" : `נותרו ${10 - volunteerHours} שעות`,
-    },
-    {
-      id: 3,
-      icon: <Zap size={20} />,
-      label: "צובר/ת נקודות",
-      color: "bg-yellow-100 text-yellow-600",
-      unlocked: points >= 50,
-      criteria: points >= 50 ? "נפתח" : `נותרו ${50 - points} נק׳`,
-    },
-    {
-      id: 4,
-      icon: <Award size={20} />,
-      label: topSubject ? `תותח/ית ${topSubject}` : "מומחה/ית מקצוע",
-      color: "bg-purple-100 text-purple-600",
-      unlocked: !!topSubject && points >= 20,
-      criteria: !topSubject ? "בחר/י מקצוע חוזק" : points >= 20 ? "נפתח" : `נותרו ${20 - points} נק׳`,
-    },
-    {
-      id: 5,
-      icon: <Star size={20} />,
-      label: "חונך/ת מצטיין/ת",
-      color: "bg-emerald-100 text-emerald-600",
-      unlocked: volunteerHours >= 30 && points >= 150,
-      criteria:
-        volunteerHours >= 30 && points >= 150
-          ? "נפתח"
-          : `צריך/ה 30 שעות ו-150 נק׳`,
-    },
+    { id: 1, icon: <Shield size={20} />, label: "חונך מאומת", color: "bg-blue-100 text-blue-600" },
+    { id: 2, icon: <Zap size={20} />, label: "תגובה מהירה", color: "bg-yellow-100 text-yellow-600" },
+    { id: 3, icon: <Award size={20} />, label: "תותח היסטוריה", color: "bg-purple-100 text-purple-600" },
+    { id: 4, icon: <Heart size={20} />, label: "לב זהב", color: "bg-red-100 text-red-600" },
   ];
 
   return (
@@ -85,8 +33,8 @@ export function ProfileScreen({ onClose, onSignout }) {
           <div className="w-20 h-20 bg-gradient-to-br from-blue-200 to-green-200 rounded-full flex items-center justify-center text-3xl mb-3 border-4 border-white shadow-lg">
             🧑‍🎓
           </div>
-          <h2 className="text-xl font-bold text-slate-800">{profileUser?.name || ""}</h2>
-          <p className="text-sm text-slate-500">{profileUser?.school} • {profileUser?.grade}</p>
+          <h2 className="text-xl font-bold text-slate-800">{user?.name || ""}</h2>
+          <p className="text-sm text-slate-500">{user?.school} • {user?.grade}</p>
 
           <div className="flex gap-2 mt-6 bg-slate-100 p-1 rounded-xl w-full max-w-[240px]">
             <button
@@ -111,7 +59,7 @@ export function ProfileScreen({ onClose, onSignout }) {
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
               <div className="flex justify-between items-center mb-2">
                 <h3 className="font-bold text-slate-700 text-sm">שעות התנדבות</h3>
-                <span className="text-blue-600 font-bold text-lg">{profileUser?.volunteerHours ?? 0}/{maxHours}</span>
+                <span className="text-blue-600 font-bold text-lg">{user?.volunteerHours ?? 0}/{maxHours}</span>
               </div>
               <div className="w-full bg-slate-100 rounded-full h-2.5">
                 <div
@@ -120,7 +68,7 @@ export function ProfileScreen({ onClose, onSignout }) {
                 ></div>
               </div>
               <p className="text-xs text-slate-400 mt-2 text-right">
-                עוד {Math.max(0, maxHours - (profileUser?.volunteerHours ?? 0))} שעות לקבלת תעודת הצטיינות!
+                עוד {maxHours - (user?.volunteerHours ?? 0)} שעות לקבלת תעודת הצטיינות!
               </p>
             </div>
 
@@ -128,7 +76,7 @@ export function ProfileScreen({ onClose, onSignout }) {
               <h3 className="font-bold text-slate-700 text-sm mb-3">הנקודות שלי</h3>
               <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
                 <div>
-                  <p className="text-3xl font-black text-slate-800">{profileUser?.points ?? 0}</p>
+                  <p className="text-3xl font-black text-slate-800">{user?.points ?? 0}</p>
                   <p className="text-xs text-slate-500">נקודות צבורות</p>
                 </div>
                 <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-2xl">⭐</div>
@@ -139,23 +87,15 @@ export function ProfileScreen({ onClose, onSignout }) {
               <h3 className="font-bold text-slate-700 text-sm mb-3">התגים שלי (Badges)</h3>
               <div className="grid grid-cols-2 gap-3">
                 {badges.map((badge) => (
-                  <div
-                    key={badge.id}
-                    className={`p-3 rounded-xl border flex items-center gap-3 shadow-sm ${
-                      badge.unlocked
-                        ? "bg-white border-slate-100"
-                        : "bg-slate-50 border-dashed border-slate-200 opacity-70"
-                    }`}
-                  >
-                    <div className={`p-2 rounded-lg ${badge.unlocked ? badge.color : "bg-slate-200 text-slate-400"}`}>
-                      {badge.icon}
-                    </div>
-                    <div>
-                      <p className={`text-xs font-bold ${badge.unlocked ? "text-slate-700" : "text-slate-400"}`}>{badge.label}</p>
-                      <p className="text-[10px] text-slate-400">{badge.criteria}</p>
-                    </div>
+                  <div key={badge.id} className="bg-white p-3 rounded-xl border border-slate-100 flex items-center gap-3 shadow-sm">
+                    <div className={`p-2 rounded-lg ${badge.color}`}>{badge.icon}</div>
+                    <span className="text-xs font-bold text-slate-700">{badge.label}</span>
                   </div>
                 ))}
+                <div className="bg-slate-50 p-3 rounded-xl border border-dashed border-slate-200 flex items-center gap-3 opacity-60">
+                  <div className="p-2 rounded-lg bg-slate-200 text-slate-400"><Star size={20} /></div>
+                  <span className="text-xs font-medium text-slate-400">חונך מצטיין</span>
+                </div>
               </div>
             </div>
 
