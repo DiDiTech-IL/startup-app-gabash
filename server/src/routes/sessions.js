@@ -5,6 +5,20 @@ const { authenticate } = require("../middleware/auth");
 
 const router = express.Router();
 
+async function getUpcomingSessionsForUser(userId) {
+  return prisma.session.findMany({
+    where: {
+      OR: [{ mentorId: userId }, { studentId: userId }],
+      status: "SCHEDULED",
+    },
+    include: {
+      mentor: { select: { id: true, name: true, avatarColor: true } },
+      student: { select: { id: true, name: true, avatarColor: true } },
+    },
+    orderBy: { startTime: "asc" },
+  });
+}
+
 // POST /api/sessions
 router.post("/sessions", authenticate, async (req, res, next) => {
   const schema = z.object({
@@ -46,17 +60,17 @@ router.post("/sessions", authenticate, async (req, res, next) => {
 // GET /api/sessions/upcoming
 router.get("/sessions/upcoming", authenticate, async (req, res, next) => {
   try {
-    const sessions = await prisma.session.findMany({
-      where: {
-        OR: [{ mentorId: req.user.id }, { studentId: req.user.id }],
-        status: "SCHEDULED",
-      },
-      include: {
-        mentor: { select: { id: true, name: true, avatarColor: true } },
-        student: { select: { id: true, name: true, avatarColor: true } },
-      },
-      orderBy: { startTime: "asc" },
-    });
+    const sessions = await getUpcomingSessionsForUser(req.user.id);
+    res.json(sessions);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/sessions
+router.get("/sessions", authenticate, async (req, res, next) => {
+  try {
+    const sessions = await getUpcomingSessionsForUser(req.user.id);
     res.json(sessions);
   } catch (err) {
     next(err);

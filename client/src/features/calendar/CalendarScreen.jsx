@@ -9,7 +9,7 @@ export function CalendarScreen({ partner, onBack, onReport }) {
 
   const { data: sessions = [] } = useQuery({
     queryKey: ["sessions"],
-    queryFn: sessionsApi.upcoming,
+    queryFn: sessionsApi.list,
   });
 
   const partnerName = partner?.name || sessions[0]?.mentor?.name || sessions[0]?.student?.name || "רועי";

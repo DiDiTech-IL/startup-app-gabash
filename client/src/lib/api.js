@@ -86,8 +86,9 @@ export const threadsApi = {
 
 // SESSIONS
 export const sessionsApi = {
+  list: () => request("/api/sessions"),
   create: (data) => request("/api/sessions", { method: "POST", body: JSON.stringify(data) }),
-  upcoming: () => request("/api/sessions/upcoming"),
+  upcoming: () => request("/api/sessions"),
   complete: (id) => request(`/api/sessions/${id}/complete`, { method: "POST" }),
 };
 
