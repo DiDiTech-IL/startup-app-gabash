@@ -1,6 +1,6 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const { z } = require("zod");
 const { prisma } = require("../lib/prisma");
 const { JWT_SECRET } = require("../middleware/auth");
