@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AuthProvider, useAuth } from "../lib/auth.jsx";
 import { SafetyControl } from "../features/safety/SafetyControl.jsx";
 import { StatusBar } from "../components/StatusBar.jsx";
@@ -17,7 +17,7 @@ import { LibraryScreen } from "../features/library/LibraryScreen.jsx";
 import { RewardsScreen } from "../features/rewards/RewardsScreen.jsx";
 import { AiAssistantScreen } from "../features/ai/AiAssistantScreen.jsx";
 import { MessagesScreen } from "../features/messages/MessagesScreen.jsx";
-import { Calendar, Gift, Users } from "lucide-react";
+import { AlertCircle, Gift } from "lucide-react";
 
 function AppInner() {
   const { loading, joining, user, signup, signin, signout } = useAuth();
@@ -34,6 +34,8 @@ function AppInner() {
   const [showProfile, setShowProfile] = useState(false);
   const [isSafetyOpen, setIsSafetyOpen] = useState(false);
   const [notificationData, setNotificationData] = useState(null);
+  const [errorToast, setErrorToast] = useState(null);
+  const [authError, setAuthError] = useState(null);
 
   const handleSignout = () => {
     signout();
@@ -45,6 +47,29 @@ function AppInner() {
     setShowNotification(false);
     setAnimate(false);
   };
+
+  useEffect(() => {
+    if (!user) return;
+    setSelectedStrong(user.strongSubjects ?? []);
+    setSelectedWeak(user.weakSubjects ?? []);
+    setSelectedInterests(user.interests ?? []);
+  }, [user?.id, user?.strongSubjects, user?.weakSubjects, user?.interests]);
+
+  useEffect(() => {
+    const onApiError = (event) => {
+      const message = event?.detail?.message || "אירעה שגיאה, נסה/י שוב";
+      setErrorToast(message);
+    };
+
+    window.addEventListener("helpin:api-error", onApiError);
+    return () => window.removeEventListener("helpin:api-error", onApiError);
+  }, []);
+
+  useEffect(() => {
+    if (!errorToast) return;
+    const timer = setTimeout(() => setErrorToast(null), 3500);
+    return () => clearTimeout(timer);
+  }, [errorToast]);
 
   if (loading) {
     return (
@@ -74,13 +99,14 @@ function AppInner() {
   const handleStart = async (profile) => {
     if (!user) {
       try {
+        setAuthError(null);
         if (profile.mode === "signin") {
           await signin({ name: profile.name, school: profile.school, pin: profile.pin });
         } else {
           await signup(profile);
         }
       } catch (error) {
-        console.error("Auth failed", error);
+        setAuthError(error.message || "אירעה שגיאה, נסה שוב");
         return;
       }
     }
@@ -111,18 +137,6 @@ function AppInner() {
   const handleSuccess = (nextScreen, student) => {
     if (student) setChatPartner(student);
     handleTransition(nextScreen);
-    const partnerName = student?.name || "חבר";
-    setTimeout(() => {
-      setNotificationData({
-        title: "לוח שנה",
-        message: `נקבע שיעור עם ${partnerName} ביום ג' ב-16:00 🗓️`,
-        icon: Calendar,
-        color: "bg-red-500",
-        type: "calendar",
-      });
-      setShowNotification(true);
-      setTimeout(() => setShowNotification(false), 4000);
-    }, 1000);
   };
 
   const handlePurchase = (item, code) => {
@@ -170,6 +184,21 @@ function AppInner() {
           }}
         />
 
+        <Notification
+          show={!!errorToast}
+          data={
+            errorToast
+              ? {
+                  title: "שגיאה",
+                  message: errorToast,
+                  icon: AlertCircle,
+                  color: "bg-red-500",
+                }
+              : null
+          }
+          onClick={() => setErrorToast(null)}
+        />
+
         <div
           className={`h-full w-full transition-opacity duration-300 ${
             animate ? "opacity-0" : "opacity-100"
@@ -184,7 +213,7 @@ function AppInner() {
             />
           )}
           {screen === "landing" && (
-            <LandingScreen onStart={handleStart} isStarting={joining} />
+            <LandingScreen onStart={handleStart} isStarting={joining} authError={authError} />
           )}
           {screen === "dashboard" && (
             <DashboardScreen

@@ -17,8 +17,21 @@ router.get("/matches", authenticate, async (req, res, next) => {
     const me = await prisma.user.findUnique({ where: { id: req.user.id } });
     if (!me) return res.status(404).json({ error: "User not found" });
 
+    const norm = (v) => (v ?? "").trim().toLowerCase();
+
     const others = await prisma.user.findMany({
-      where: { id: { not: me.id } },
+      where: {
+        AND: [
+          { id: { not: me.id } },
+          {
+            NOT: {
+              name: { equals: me.name, mode: "insensitive" },
+              school: { equals: me.school, mode: "insensitive" },
+              grade: { equals: me.grade, mode: "insensitive" },
+            },
+          },
+        ],
+      },
       select: {
         id: true,
         name: true,
@@ -64,7 +77,19 @@ router.get("/matches", authenticate, async (req, res, next) => {
 
     matches.sort((a, b) => b.matchPercent - a.matchPercent);
 
-    res.json(matches);
+    // Hard-filter self — should already be excluded by the query above,
+    // but this ensures it is impossible regardless of any edge case.
+    const safe = matches.filter((m) => {
+      const sameId = m.user.id === me.id;
+      const sameProfile =
+        norm(m.user.name) === norm(me.name) &&
+        norm(m.user.school) === norm(me.school) &&
+        norm(m.user.grade) === norm(me.grade);
+
+      return !sameId && !sameProfile;
+    });
+
+    res.json(safe);
   } catch (err) {
     next(err);
   }

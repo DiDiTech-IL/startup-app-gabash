@@ -12,6 +12,29 @@ function getToken() {
 
 const API_KEY = import.meta.env.VITE_API_KEY ?? "";
 
+function emitApiErrorToast(message, status) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent("helpin:api-error", {
+      detail: { message, status },
+    })
+  );
+}
+
+function extractErrorMessage(body, fallback) {
+  if (!body) return fallback;
+  if (typeof body.error === "string" && body.error.trim()) return body.error;
+
+  if (Array.isArray(body.error) && body.error.length > 0) {
+    const first = body.error[0];
+    if (typeof first === "string") return first;
+    if (first?.message) return first.message;
+  }
+
+  if (typeof body.message === "string" && body.message.trim()) return body.message;
+  return fallback;
+}
+
 async function request(path, options = {}) {
   const token = getToken();
   const controller = new AbortController();
@@ -32,16 +55,21 @@ async function request(path, options = {}) {
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({ error: res.statusText }));
-      const err = new Error(body.error || `HTTP ${res.status}`);
+      const message = extractErrorMessage(body, `HTTP ${res.status}`);
+      const err = new Error(message);
       err.status = res.status;
+      emitApiErrorToast(message, res.status);
       throw err;
     }
 
     return res.json();
   } catch (error) {
     if (error.name === "AbortError") {
-      throw new Error("Request timed out. Please try again.");
+      const message = "Request timed out. Please try again.";
+      emitApiErrorToast(message, 408);
+      throw new Error(message);
     }
+    if (error?.message) emitApiErrorToast(error.message, error.status);
     throw error;
   } finally {
     clearTimeout(timeout);
@@ -66,6 +94,7 @@ export const usersApi = {
 export const postsApi = {
   list: () => request("/api/posts"),
   create: (data) => request("/api/posts", { method: "POST", body: JSON.stringify(data) }),
+  delete: (id) => request(`/api/posts/${id}`, { method: "DELETE" }),
   like: (id) => request(`/api/posts/${id}/like`, { method: "POST" }),
   comment: (id, data) =>
     request(`/api/posts/${id}/comments`, { method: "POST", body: JSON.stringify(data) }),
@@ -87,8 +116,10 @@ export const threadsApi = {
 // SESSIONS
 export const sessionsApi = {
   create: (data) => request("/api/sessions", { method: "POST", body: JSON.stringify(data) }),
+  list: () => request("/api/sessions"),
   upcoming: () => request("/api/sessions/upcoming"),
   complete: (id) => request(`/api/sessions/${id}/complete`, { method: "POST" }),
+  cancel: (id) => request(`/api/sessions/${id}`, { method: "DELETE" }),
 };
 
 // REWARDS
@@ -101,4 +132,27 @@ export const rewardsApi = {
 export const safetyApi = {
   report: (data) =>
     request("/api/safety/reports", { method: "POST", body: JSON.stringify(data) }),
+};
+
+// LIBRARY
+export const libraryApi = {
+  subjects: () => request("/api/library/subjects"),
+  resources: async (subject, scope = "all") => {
+    const search = new URLSearchParams();
+    if (subject) search.set("subject", subject);
+    if (scope) search.set("scope", scope);
+
+    const result = await request(
+      `/api/library/resources${search.toString() ? `?${search.toString()}` : ""}`
+    );
+
+    if (Array.isArray(result)) return result;
+    if (!result?.ok) throw new Error("Library response was not successful");
+
+    const resources = Array.isArray(result.resources) ? result.resources : [];
+    const uniqueById = new Map(resources.map((item) => [item.id, item]));
+    return Array.from(uniqueById.values());
+  },
+  addResource: (data) =>
+    request("/api/library/resources", { method: "POST", body: JSON.stringify(data) }),
 };

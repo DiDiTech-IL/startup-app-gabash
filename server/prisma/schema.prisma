@@ -34,6 +34,8 @@ model User {
   redemptions       Redemption[]
   safetyReports     SafetyReport[] @relation("reporter")
   safetyTargets     SafetyReport[] @relation("target")
+  aiConversations   AiConversation[]
+  resources         Resource[]
 }
 
 model Post {
@@ -117,6 +119,7 @@ model Session {
 enum SessionStatus {
   SCHEDULED
   COMPLETED
+  CANCELED
 }
 
 model Reward {
@@ -148,4 +151,28 @@ model SafetyReport {
 
   reporter User  @relation("reporter", fields: [reporterId], references: [id])
   target   User? @relation("target", fields: [targetUserId], references: [id])
+}
+
+model AiConversation {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  messages  Json     // full [{role, content}] array — one row per conversation
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, updatedAt])
+}
+
+model Resource {
+  id        String   @id @default(uuid())
+  authorId  String
+  subject   String
+  title     String
+  url       String
+  createdAt DateTime @default(now())
+
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
 }

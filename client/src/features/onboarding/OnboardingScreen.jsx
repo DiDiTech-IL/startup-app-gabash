@@ -6,8 +6,22 @@ import { ArrowLeft, Award, BookOpen, Trophy, Gamepad2, Music, Plane } from "luci
 
 const COLORS = { blue: "#2079C6", green: "#7AC143" };
 
-const strongSubjects = ['מתמטיקה 5 יח"ל', "אנגלית", "פיזיקה", "מדעי המחשב", "כימיה", "ביולוגיה", "ערבית"];
-const weakSubjects = ["היסטוריה", "לשון", 'תנ"ך', "אזרחות", "ספרות", "גיאוגרפיה", 'מתמטיקה 3 יח"ל'];
+const allSubjects = [
+  'מתמטיקה 5 יח"ל',
+  'מתמטיקה 3 יח"ל',
+  "אנגלית",
+  "פיזיקה",
+  "מדעי המחשב",
+  "כימיה",
+  "ביולוגיה",
+  "ערבית",
+  "היסטוריה",
+  "לשון",
+  'תנ"ך',
+  "אזרחות",
+  "ספרות",
+  "גיאוגרפיה",
+];
 const interestsList = [
   { id: "sport", label: "ספורט", icon: <Trophy size={20} /> },
   { id: "gaming", label: "גיימינג", icon: <Gamepad2 size={20} /> },
@@ -70,7 +84,7 @@ export function OnboardingScreen({
             במה אני חזק/ה?
           </h3>
           <div className="flex flex-wrap gap-2">
-            {strongSubjects.map((item) => {
+            {allSubjects.map((item) => {
               const isSelected = selectedStrong.includes(item);
               return (
                 <button
@@ -95,7 +109,7 @@ export function OnboardingScreen({
             אני צריך/ה עזרה ב...
           </h3>
           <div className="flex flex-wrap gap-2">
-            {weakSubjects.map((item) => {
+            {allSubjects.map((item) => {
               const isSelected = selectedWeak.includes(item);
               return (
                 <button
@@ -152,6 +166,11 @@ export function OnboardingScreen({
         >
           {prefMutation.isPending ? "מחפש..." : !isValid ? "בחר מקצוע כדי להמשיך" : "מצא לי התאמות"}
         </button>
+        {prefMutation.isError && (
+          <p className="text-xs text-red-500 mt-2 text-center">
+            {prefMutation.error?.message || "שמירת ההעדפות נכשלה, נסה/י שוב"}
+          </p>
+        )}
       </div>
     </div>
   );
